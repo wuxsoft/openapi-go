@@ -46,6 +46,7 @@ Save the `client_id` for use in your application.
 ```golang
 import (
     "context"
+    "fmt"
     "log"
 
     "github.com/longportapp/openapi-go/config"
@@ -54,8 +55,11 @@ import (
 )
 
 func main() {
-    // Start OAuth authorization flow — opens browser automatically
-    o := oauth.New("your-client-id")
+    // Start OAuth authorization flow
+    o := oauth.New("your-client-id").
+        OnOpenURL(func(url string) {
+            fmt.Println("Please visit:", url)
+        })
     token, err := o.Authorize(context.Background())
     if err != nil {
         log.Fatal(err)
@@ -285,7 +289,10 @@ import (
 )
 
 func main() {
-    o := oauth.New("your-client-id")
+    o := oauth.New("your-client-id").
+        OnOpenURL(func(url string) {
+            fmt.Println("Please visit:", url)
+        })
     token, err := o.Authorize(context.Background())
     if err != nil {
         log.Fatal(err)
@@ -361,7 +368,10 @@ import (
 )
 
 func main() {
-    o := oauth.New("your-client-id")
+    o := oauth.New("your-client-id").
+        OnOpenURL(func(url string) {
+            fmt.Println("Please visit:", url)
+        })
     token, err := o.Authorize(context.Background())
     if err != nil {
         log.Fatal(err)

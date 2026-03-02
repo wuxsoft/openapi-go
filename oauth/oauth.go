@@ -18,11 +18,10 @@
 package oauth
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"net"
-	"net/url"
+	"net/http"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -143,10 +142,30 @@ func (o *OAuth) Authorize(ctx context.Context) (*OAuthToken, error) {
 		err   error
 	}
 	ch := make(chan result, 1)
-	go func() {
-		code, st, err := waitForCallback(listener)
-		ch <- result{code, st, err}
-	}()
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		if oauthErr := q.Get("error"); oauthErr != "" {
+			writeHTML(w, http.StatusBadRequest,
+				fmt.Sprintf("<h1>Authorization Failed</h1><p>Error: %s</p>", oauthErr))
+			ch <- result{err: fmt.Errorf("oauth: authorization failed: %s", oauthErr)}
+			return
+		}
+		code, st := q.Get("code"), q.Get("state")
+		if code == "" || st == "" {
+			writeHTML(w, http.StatusBadRequest,
+				"<h1>Missing Parameters</h1><p>Authorization code or state not received</p>")
+			ch <- result{err: fmt.Errorf("oauth: missing code or state in callback")}
+			return
+		}
+		writeHTML(w, http.StatusOK,
+			"<h1>✓ Authorization Successful!</h1><p>You can close this window and return to the terminal.</p>")
+		ch <- result{code: code, state: st}
+	})
+
+	srv := &http.Server{Handler: mux}
+	go srv.Serve(listener) //nolint:errcheck
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, authTimeout)
 	defer cancel()
@@ -219,72 +238,9 @@ func tokenFromOAuth2(t *oauth2.Token) *OAuthToken {
 const callbackStyle = `<style>html{font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;` +
 	`font-size:16px;color:#e0e0e0;background:#202020;padding:2rem;text-align:center;}</style>`
 
-func waitForCallback(listener net.Listener) (code, state string, err error) {
-	conn, err := listener.Accept()
-	if err != nil {
-		return "", "", fmt.Errorf("oauth: callback server error: %w", err)
-	}
-	defer conn.Close()
-
-	// Read only the request line; we don't need headers.
-	requestLine, err := bufio.NewReader(conn).ReadString('\n')
-	if err != nil {
-		return "", "", fmt.Errorf("oauth: failed to read callback request: %w", err)
-	}
-
-	// e.g. "GET /callback?code=xxx&state=yyy HTTP/1.1"
-	parts := splitFields(requestLine)
-	if len(parts) < 2 {
-		writeHTML(conn, 400, "Bad Request", "<h1>Bad Request</h1>")
-		return "", "", fmt.Errorf("oauth: malformed callback request")
-	}
-
-	u, err := url.Parse("http://localhost" + parts[1])
-	if err != nil {
-		writeHTML(conn, 400, "Bad Request", "<h1>Invalid URL</h1>")
-		return "", "", fmt.Errorf("oauth: invalid callback URL: %w", err)
-	}
-
-	q := u.Query()
-	if oauthErr := q.Get("error"); oauthErr != "" {
-		writeHTML(conn, 400, "Authorization Failed",
-			fmt.Sprintf("<h1>Authorization Failed</h1><p>Error: %s</p>", oauthErr))
-		return "", "", fmt.Errorf("oauth: authorization failed: %s", oauthErr)
-	}
-
-	code, state = q.Get("code"), q.Get("state")
-	if code == "" || state == "" {
-		writeHTML(conn, 400, "Missing Parameters",
-			"<h1>Missing Parameters</h1><p>Authorization code or state not received</p>")
-		return "", "", fmt.Errorf("oauth: missing code or state in callback")
-	}
-
-	writeHTML(conn, 200, "OK",
-		"<h1>✓ Authorization Successful!</h1><p>You can close this window and return to the terminal.</p>")
-	return code, state, nil
-}
-
-func writeHTML(conn net.Conn, status int, statusText, body string) {
+func writeHTML(w http.ResponseWriter, status int, body string) {
 	html := fmt.Sprintf("<html><body>%s%s</body></html>", callbackStyle, body)
-	fmt.Fprintf(conn, "HTTP/1.1 %d %s\r\nContent-Type: text/html; charset=utf-8\r\n\r\n%s",
-		status, statusText, html)
-}
-
-func splitFields(s string) []string {
-	var fields []string
-	start := -1
-	for i, c := range s {
-		if c == ' ' || c == '\t' || c == '\r' || c == '\n' {
-			if start >= 0 {
-				fields = append(fields, s[start:i])
-				start = -1
-			}
-		} else if start < 0 {
-			start = i
-		}
-	}
-	if start >= 0 {
-		fields = append(fields, s[start:])
-	}
-	return fields
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	fmt.Fprint(w, html)
 }
