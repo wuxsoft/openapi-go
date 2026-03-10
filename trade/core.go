@@ -5,13 +5,13 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/longportapp/openapi-go/internal/util"
-	"github.com/longportapp/openapi-go/log"
-	"github.com/longportapp/openapi-go/trade/jsontypes"
+	"github.com/longbridge/openapi-go/internal/util"
+	"github.com/longbridge/openapi-go/log"
+	"github.com/longbridge/openapi-go/trade/jsontypes"
 
-	tradev1 "github.com/longportapp/openapi-protobufs/gen/go/trade"
-	protocol "github.com/longportapp/openapi-protocol/go"
-	"github.com/longportapp/openapi-protocol/go/client"
+	tradev1 "github.com/longbridge/openapi-protobufs/gen/go/trade"
+	protocol "github.com/longbridge/openapi-protocol/go"
+	"github.com/longbridge/openapi-protocol/go/client"
 	"github.com/pkg/errors"
 )
 
@@ -24,11 +24,10 @@ type core struct {
 
 func newCore(opts *Options) (*core, error) {
 	getOTP := func() (string, error) {
-		otp, err := opts.httpClient.GetOTP(context.Background())
+		otp, err := opts.httpClient.GetOTPV2(context.Background())
 		if err != nil {
 			return "", errors.Wrap(err, "failed to get otp")
 		}
-
 		return otp, nil
 	}
 

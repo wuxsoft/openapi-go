@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/longbridgeapp/assert"
-	"github.com/longportapp/openapi-go/config"
+	"github.com/longbridge/openapi-go/config"
+	"github.com/longbridge/openapi-go/oauth"
 )
 
 var expectedConfig = &config.Config{
@@ -44,4 +45,17 @@ func Test_TomlConfig(t *testing.T) {
 	c, err := config.New(config.WithFilePath("./testdata/test_config.toml"))
 	assert.NoError(t, err)
 	assert.Equal(t, expectedConfig, c)
+}
+
+func Test_LegacyMode_RequiresAppSecret(t *testing.T) {
+	c, err := config.New(config.WithConfigKey("appKey", "appSecret", "accessToken"))
+	assert.NoError(t, err)
+	assert.True(t, c.OAuthClient == nil)
+}
+
+func Test_WithOAuthClient(t *testing.T) {
+	o := oauth.New("my-client-id")
+	c, err := config.New(config.WithOAuthClient(o))
+	assert.NoError(t, err)
+	assert.True(t, c.OAuthClient != nil)
 }

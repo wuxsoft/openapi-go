@@ -7,8 +7,9 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/pkg/errors"
 
-	"github.com/longportapp/openapi-go"
-	"github.com/longportapp/openapi-go/log"
+	"github.com/longbridge/openapi-go"
+	"github.com/longbridge/openapi-go/log"
+	"github.com/longbridge/openapi-go/oauth"
 )
 
 type IConfig interface {
@@ -49,6 +50,9 @@ type Config struct {
 	LogLevel string `env:"LONGBRIDGE_LOG_LEVEL,LONGPORT_LOG_LEVEL" yaml:"log_level" toml:"log_level"`
 	logger   log.Logger
 
+	// OAuthClient is set when using OAuth 2.0 with auto-refresh (see WithOAuthClient).
+	OAuthClient *oauth.OAuth
+
 	// longbridge protocol config
 	AuthTimeout    time.Duration `env:"LONGBRIDGE_AUTH_TIMEOUT,LONGPORT_AUTH_TIMEOUT" yaml:"auth_timeout" toml:"auth_timeout"`
 	Timeout        time.Duration `env:"LONGBRIDGE_TIMEOUT,LONGPORT_TIMEOUT" yaml:"timeout" toml:"timeout"`
@@ -61,7 +65,7 @@ type Config struct {
 
 // parseConfig is a config for toml/yaml
 type parseConfig struct {
-	Longport *Config `toml:"longport" yaml:"longport"`
+	Longbridge *Config `toml:"longbridge" yaml:"longbridge"`
 }
 
 func (c *Config) SetLogger(l log.Logger) {
@@ -98,6 +102,9 @@ func New(opts ...Option) (configData *Config, err error) {
 	if options.accessToken != nil {
 		configData.AccessToken = *options.accessToken
 	}
+	if options.oauthClient != nil {
+		configData.OAuthClient = options.oauthClient
+	}
 
 	if configData.Region == RegionCN {
 		configData.HttpURL = cnHttpUrl
@@ -115,22 +122,27 @@ func New(opts ...Option) (configData *Config, err error) {
 }
 
 func (c *Config) check() (err error) {
+	if c.OAuthClient != nil {
+		// OAuth 2.0 with client: token and app key are resolved at request time
+		return nil
+	}
 	if c.AccessToken == "" {
-		err = errors.New("Don't has accessToken. Please set access token on LONGPORT_ACCESS_TOKEN env")
+		err = errors.New("missing access token (set LONGBRIDGE_ACCESS_TOKEN or use WithOAuthClient)")
 		return
 	}
 	if c.AppKey == "" {
-		err = errors.New("Don't has appKey. Please set app key on LONGPORT_APP_KEY env")
+		err = errors.New("missing app key (set LONGBRIDGE_APP_KEY or use WithOAuthClient)")
 		return
 	}
+	// WithOAuthClient skips this path; here AppSecret is required
 	if c.AppSecret == "" {
-		err = errors.New("Don't has appSecret. Please set app secret on LONGPORT_APP_SECRET env")
+		err = errors.New("missing app secret (set LONGBRIDGE_APP_SECRET or use WithOAuthClient)")
 		return
 	}
 	return
 }
 
-// Deprecated: NewFormEnv to create config with enviromente variables
+// Deprecated: NewFormEnv to create config from environment variables
 func NewFormEnv() (*Config, error) {
 	return New()
 }
