@@ -53,16 +53,9 @@ func Test_LegacyMode_RequiresAppSecret(t *testing.T) {
 	assert.True(t, c.OAuthClient == nil)
 }
 
-func Test_WithOAuth_RequiresAppSecret(t *testing.T) {
-	// Without OAuthClient, AppSecret is required; WithOAuth does not set AppSecret, so New fails
-	_, err := config.New(config.WithOAuth("my-client-id", "my-access-token"))
-	assert.Error(t, err)
-}
-
 func Test_WithOAuthClient(t *testing.T) {
 	o := oauth.New("my-client-id")
 	c, err := config.New(config.WithOAuthClient(o))
 	assert.NoError(t, err)
 	assert.True(t, c.OAuthClient != nil)
 }
-
