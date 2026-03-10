@@ -12,15 +12,12 @@ import "github.com/longbridge/openapi-go"
 
 ## Authentication
 
-### 1. OAuth 2.0 (Recommended)
+Longbridge OpenAPI supports two authentication methods:
 
-OAuth 2.0 is the modern authentication method that uses Bearer tokens without requiring HMAC signatures.
+1. **OAuth 2.0 (Recommended)** — Bearer tokens, no HMAC; token is stored and refreshed automatically. See [Config: Using OAuth 2.0](#using-oauth-20-recommended).
+2. **Legacy API Key** — App key, secret, and access token via environment variables. See [Config: Using legacy API key](#using-legacy-api-key-environment-variables).
 
-**Token storage:** After you complete the authorization flow, the SDK stores the access token and refresh token under `~/.longbridge-openapi/tokens/<client_id>` (or `%USERPROFILE%\.longbridge-openapi\tokens\<client_id>` on Windows). The SDK loads and refreshes tokens from this directory automatically on later runs, so you typically only need to authorize once per machine.
-
-**Step 1: Register OAuth Client**
-
-First, register an OAuth client to get your `client_id`:
+If you use OAuth, register an OAuth client first to get your `client_id`:
 
 ```bash
 curl -X POST https://openapi.longbridge.com/v1/oauth2/client/register \
@@ -41,11 +38,15 @@ Response:
 }
 ```
 
-Save the `client_id` for use in your application.
+Save the `client_id` for use when building config (see Config section below).
 
-**Step 2: Build OAuth and set on config (same usage as Rust SDK)**
+## Config
 
-The SDK stores the token in `~/.longbridge-openapi/tokens/<client_id>` and refreshes it automatically. You do not handle tokens yourself.
+You can create a `Config` in two ways: with OAuth (recommended) or with legacy API key (environment variables). The examples in this README use OAuth.
+
+### Using OAuth 2.0 (Recommended)
+
+**Token storage:** After the authorization flow, the SDK stores the access and refresh tokens under `~/.longbridge-openapi/tokens/<client_id>` (or `%USERPROFILE%\.longbridge-openapi\tokens\<client_id>` on Windows). It loads and refreshes them automatically on later runs, so you typically authorize once per machine.
 
 ```golang
 import (
@@ -55,7 +56,6 @@ import (
 
     "github.com/longbridge/openapi-go/config"
     "github.com/longbridge/openapi-go/oauth"
-    "github.com/longbridge/openapi-go/quote"
 )
 
 func main() {
@@ -63,33 +63,25 @@ func main() {
         OnOpenURL(func(url string) {
             fmt.Println("Please visit:", url)
         })
-    // Load token from disk or run authorization flow; token is persisted and auto-refreshed
     if err := o.Build(context.Background()); err != nil {
         log.Fatal(err)
     }
 
-    // Set OAuth on config (like Rust SDK: Config::from_oauth(oauth))
     cfg, err := config.New(config.WithOAuthClient(o))
     if err != nil {
         log.Fatal(err)
     }
-
-    quoteContext, err := quote.NewFromCfg(cfg)
-    // ...
+    // Use cfg with quote.NewFromCfg(cfg), trade.NewFromCfg(cfg), http.NewFromCfg(cfg), etc.
 }
 ```
 
-**Benefits:**
-- Token is stored in `~/.longbridge-openapi/tokens/<client_id>` and refreshed automatically
-- No need to handle or expose tokens in your code
-- Same usage pattern as the Rust SDK (OAuth set on config)
-- More secure (no shared secret), no HMAC signature
+**Benefits:** No shared secret; no per-request HMAC; token load/refresh/persist is automatic.
 
-### 2. Legacy API Key (Environment Variables)
+### Using legacy API key (environment variables)
 
-For backward compatibility, you can still use the traditional API key method:
+For backward compatibility you can use the traditional three keys. **Load from env** and **Load from file** (see below) only support Legacy API Key (app key, secret, access token); they do not support OAuth. Set env vars (or a `.env` file), then call `config.New()`.
 
-_Setting environment variables (MacOS/Linux)_
+_macOS / Linux_
 
 ```bash
 export LONGBRIDGE_APP_KEY="App Key get from user center"
@@ -97,7 +89,7 @@ export LONGBRIDGE_APP_SECRET="App Secret get from user center"
 export LONGBRIDGE_ACCESS_TOKEN="Access Token get from user center"
 ```
 
-_Setting environment variables (Windows)_
+_Windows_
 
 ```powershell
 setx LONGBRIDGE_APP_KEY "App Key get from user center"
@@ -105,41 +97,21 @@ setx LONGBRIDGE_APP_SECRET "App Secret get from user center"
 setx LONGBRIDGE_ACCESS_TOKEN "Access Token get from user center"
 ```
 
-## Config
-
-### Load from env
-
-Support init config from env, and support load env from `.env` file
 
 ```golang
-import (
-    "github.com/longbridge/openapi-go/config"
-    "github.com/longbridge/openapi-go/trade"
-    "github.com/longbridge/openapi-go/http"
-)
-
-func main() {
-    c, err := config.New()
-
-    if err != nil {
-        // panic
-    }
-
-    // init http client from config
-    c, err := http.NewFromCfg(c)
-
-    // init trade context from config
-    tc, err := trade.NewFromCfg(c)
-
-    // init quote context from config
-    qc, err := quote.NewFromCfg(c)
+c, err := config.New()
+if err != nil {
+    log.Fatal(err)
 }
+// Use c with NewFromCfg(c) for quote, trade, http.
 
 ```
 
-All envs is listed in the last of [README](#environment-variables)
+All supported env vars are listed in [Environment Variables](#environment-variables).
 
-### Load from file[yaml,toml]
+### Load from file (yaml, toml)
+
+Load from file (and load from env above) only supports Legacy API Key. For OAuth, use [Using OAuth 2.0](#using-oauth-20-recommended).
 
 #### yaml example
 
@@ -266,8 +238,6 @@ c.Client = &http.Client{
 
 ## Quote API (Get basic information of securities)
 
-**Using OAuth 2.0 (Recommended):**
-
 ```golang
 package main
 
@@ -306,47 +276,7 @@ func main() {
 }
 ```
 
-**Using legacy API key (environment variables):**
-
-```golang
-package main
-
-import (
-    "context"
-    "fmt"
-    "log"
-
-    "github.com/longbridge/openapi-go/quote"
-    "github.com/longbridge/openapi-go/config"
-)
-
-func main() {
-    conf, err := config.New()
-    if err != nil {
-        log.Fatal(err)
-        return
-    }
-    // create quote context from environment variables
-    quoteContext, err := quote.NewFromCfg(conf)
-    if err != nil {
-        log.Fatal(err)
-        return
-    }
-    defer quoteContext.Close()
-    ctx := context.Background()
-    // Get basic information of securities
-    quotes, err := quoteContext.Quote(ctx, []string{"700.HK", "AAPL.US", "TSLA.US", "NFLX.US"})
-    if err != nil {
-        log.Fatal(err)
-        return
-    }
-    fmt.Printf("quotes: %v", quotes)
-}
-```
-
 ## Trade API (Submit order)
-
-**Using OAuth 2.0 (Recommended):**
 
 ```golang
 package main
@@ -390,53 +320,6 @@ func main() {
     orderId, err := tradeContext.SubmitOrder(context.Background(), order)
     if err != nil {
         log.Fatal(err)
-    }
-    fmt.Printf("orderId: %v\n", orderId)
-}
-```
-
-**Using legacy API key (environment variables):**
-
-```golang
-package main
-
-import (
-    "context"
-    "fmt"
-    "log"
-
-    "github.com/longbridge/openapi-go/trade"
-    "github.com/longbridge/openapi-go/config"
-    "github.com/shopspring/decimal"
-)
-
-func main() {
-    conf, err := config.New()
-    if err != nil {
-        log.Fatal(err)
-        return
-    }
-    // create trade context from environment variables
-    tradeContext, err := trade.NewFromCfg(conf)
-    if err != nil {
-        log.Fatal(err)
-        return
-    }
-    defer tradeContext.Close()
-    ctx := context.Background()
-    // submit order
-    order := &trade.SubmitOrder{
-        Symbol:            "700.HK",
-        OrderType:         trade.OrderTypeLO,
-        Side:              trade.OrderSideBuy,
-        SubmittedQuantity: 200,
-        TimeInForce:       trade.TimeTypeDay,
-        SubmittedPrice:    decimal.NewFromFloat(12),
-    }
-    orderId, err := tradeContext.SubmitOrder(ctx, order)
-    if err != nil {
-        log.Fatal(err)
-        return
     }
     fmt.Printf("orderId: %v\n", orderId)
 }
