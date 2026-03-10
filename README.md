@@ -1,6 +1,6 @@
-# Longport OpenAPI SDK for Go
+# Longbridge OpenAPI SDK for Go
 
-`Longport` provides an easy-to-use interface for invokes [`Longport OpenAPI`](https://open.longportapp.com/en/).
+`Longbridge` provides an easy-to-use interface for invoking [Longbridge OpenAPI](https://open.longbridge.com/).
 
 ## Quickstart
 
@@ -15,6 +15,8 @@ import "github.com/longbridge/openapi-go"
 ### 1. OAuth 2.0 (Recommended)
 
 OAuth 2.0 is the modern authentication method that uses Bearer tokens without requiring HMAC signatures.
+
+**Token storage:** After you complete the authorization flow, the SDK stores the access token and refresh token under `~/.longbridge-openapi/tokens/<client_id>` (or `%USERPROFILE%\.longbridge-openapi\tokens\<client_id>` on Windows). The SDK loads and refreshes tokens from this directory automatically on later runs, so you typically only need to authorize once per machine.
 
 **Step 1: Register OAuth Client**
 
@@ -90,17 +92,17 @@ For backward compatibility, you can still use the traditional API key method:
 _Setting environment variables (MacOS/Linux)_
 
 ```bash
-export LONGPORT_APP_KEY="App Key get from user center"
-export LONGPORT_APP_SECRET="App Secret get from user center"
-export LONGPORT_ACCESS_TOKEN="Access Token get from user center"
+export LONGBRIDGE_APP_KEY="App Key get from user center"
+export LONGBRIDGE_APP_SECRET="App Secret get from user center"
+export LONGBRIDGE_ACCESS_TOKEN="Access Token get from user center"
 ```
 
 _Setting environment variables (Windows)_
 
 ```powershell
-setx LONGPORT_APP_KEY "App Key get from user center"
-setx LONGPORT_APP_SECRET "App Secret get from user center"
-setx LONGPORT_ACCESS_TOKEN "Access Token get from user center"
+setx LONGBRIDGE_APP_KEY "App Key get from user center"
+setx LONGBRIDGE_APP_SECRET "App Secret get from user center"
+setx LONGBRIDGE_ACCESS_TOKEN "Access Token get from user center"
 ```
 
 ## Config
@@ -151,7 +153,7 @@ Here is an example of what the `test.yaml` file might look like:
 
 
 ```yaml
-longport:
+longbridge:
   app_key: xxxxx
   app_secret: xxxxx 
   access_token: xxxxx 
@@ -168,7 +170,7 @@ conf, err := config.New(config.WithFilePath("./test.toml"))
 And here is an example of a `test.toml` file:
 
 ```toml
-[longport]
+[longbridge]
 app_key = "xxxxx"
 app_secret = "xxxxx"
 access_token = "xxxxx"
@@ -180,25 +182,25 @@ Config structure as follow:
 
 ```golang
 type Config struct {
-    HttpURL     string        `env:"LONGPORT_HTTP_URL" yaml:"http_url" toml:"http_url"`
-    HTTPTimeout time.Duration `env:"LONGPORT_HTTP_TIMEOUT" yaml:"http_timeout" toml:"http_timeout"`
-    AppKey      string        `env:"LONGPORT_APP_KEY" yaml:"app_key" toml:"app_key"`
-    AppSecret   string        `env:"LONGPORT_APP_SECRET" yaml:"app_secret" toml:"app_secret"`
-    AccessToken string        `env:"LONGPORT_ACCESS_TOKEN" yaml:"access_token" toml:"access_token"`
-    TradeUrl    string        `env:"LONGPORT_TRADE_URL" yaml:"trade_url" toml:"trade_url"`
-    QuoteUrl    string        `env:"LONGPORT_QUOTE_URL" yaml:"quote_url" toml:"quote_url"`
-    EnableOvernight bool          `env:"LONGPORT_ENABLE_OVERNIGHT" yaml:"enable_overnight" toml:"enable_overnight"`
-    Language    openapi.Language `env:"LONGPORT_LANGUAGE" yaml:"language" toml:"language"`
+    HttpURL     string        `env:"LONGBRIDGE_HTTP_URL" yaml:"http_url" toml:"http_url"`
+    HTTPTimeout time.Duration `env:"LONGBRIDGE_HTTP_TIMEOUT" yaml:"http_timeout" toml:"http_timeout"`
+    AppKey      string        `env:"LONGBRIDGE_APP_KEY" yaml:"app_key" toml:"app_key"`
+    AppSecret   string        `env:"LONGBRIDGE_APP_SECRET" yaml:"app_secret" toml:"app_secret"`
+    AccessToken string        `env:"LONGBRIDGE_ACCESS_TOKEN" yaml:"access_token" toml:"access_token"`
+    TradeUrl    string        `env:"LONGBRIDGE_TRADE_URL" yaml:"trade_url" toml:"trade_url"`
+    QuoteUrl    string        `env:"LONGBRIDGE_QUOTE_URL" yaml:"quote_url" toml:"quote_url"`
+    EnableOvernight bool          `env:"LONGBRIDGE_ENABLE_OVERNIGHT" yaml:"enable_overnight" toml:"enable_overnight"`
+    Language    openapi.Language `env:"LONGBRIDGE_LANGUAGE" yaml:"language" toml:"language"`
 
-    LogLevel string `env:"LONGPORT_LOG_LEVEL" yaml:"log_level" toml:"log_level"`
-    // LONGPORT protocol config
-    AuthTimeout    time.Duration `env:"LONGPORT_AUTH_TIMEOUT" yaml:"auth_timeout" toml:"timeout"`
-    Timeout        time.Duration `env:"LONGPORT_TIMEOUT" yaml:"timeout" toml:"timeout"`
-    WriteQueueSize int           `env:"LONGPORT_WRITE_QUEUE_SIZE" yaml:"write_queue_size" toml:"write_queue_size"`
-    ReadQueueSize  int           `env:"LONGPORT_READ_QUEUE_SIZE" yaml:"read_queue_size" toml:"read_queue_size"`
-    ReadBufferSize int           `env:"LONGPORT_READ_BUFFER_SIZE" yaml:"read_buffer_size" toml:"read_buffer_size"`
-    MinGzipSize    int           `env:"LONGPORT_MIN_GZIP_SIZE" yaml:"min_gzip_size" toml:"min_gzip_size"`
-    Region Region `env:"LONGPORT_REGION" yaml:"region" toml:"region"`
+    LogLevel string `env:"LONGBRIDGE_LOG_LEVEL" yaml:"log_level" toml:"log_level"`
+    // Longbridge protocol config
+    AuthTimeout    time.Duration `env:"LONGBRIDGE_AUTH_TIMEOUT" yaml:"auth_timeout" toml:"timeout"`
+    Timeout        time.Duration `env:"LONGBRIDGE_TIMEOUT" yaml:"timeout" toml:"timeout"`
+    WriteQueueSize int           `env:"LONGBRIDGE_WRITE_QUEUE_SIZE" yaml:"write_queue_size" toml:"write_queue_size"`
+    ReadQueueSize  int           `env:"LONGBRIDGE_READ_QUEUE_SIZE" yaml:"read_queue_size" toml:"read_queue_size"`
+    ReadBufferSize int           `env:"LONGBRIDGE_READ_BUFFER_SIZE" yaml:"read_buffer_size" toml:"read_buffer_size"`
+    MinGzipSize    int           `env:"LONGBRIDGE_MIN_GZIP_SIZE" yaml:"min_gzip_size" toml:"min_gzip_size"`
+    Region Region `env:"LONGBRIDGE_REGION" yaml:"region" toml:"region"`
 }
 
 ```
@@ -446,22 +448,22 @@ Support load env from `.env` file.
 
 | name                      | description                                                                                           | default value                       | example | optional       |
 | ------------------------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------- | ------- | -------------- |
-| LONGPORT_REGION           | Set access region, if region equals `cn`, sdk will set httpUrl, quoteUrl, tradeUrl to China endpoints | -                                   | cn      | cn             |
-| LONGPORT_HTTP_URL         | LONGPORT rest api url                                                                                 | <https://openapi.longbridge.com>    |         |                |
-| LONGPORT_APP_KEY          | app key                                                                                               |                                     |         |                |
-| LONGPORT_APP_SECRET       | app secret                                                                                            |                                     |         |                |
-| LONGPORT_ACCESS_TOKEN     | access token                                                                                          |                                     |         |                |
-| LONGPORT_TRADE_URL        | LONGPORT protocol url for trade context                                                               | wss://openapi-trade.longbridge.com  |         |                |
-| LONGPORT_QUOTE_URL        | LONGPORT protocol url for quote context                                                               | wss://openapi-quote.longbridge.com  |         |                |
-| LONGPORT_LOG_LEVEL        | log level                                                                                             | info                                |         |                |
-| LONGPORT_AUTH_TIMEOUT     | LONGPORT protocol authorize request time out                                                          | 10 second                           | 10s     |                |
-| LONGPORT_TIMEOUT          | LONGPORT protocol dial timeout                                                                        | 5 second                            | 6s      |                |
-| LONGPORT_WRITE_QUEUE_SIZE | longport protocol write queue size                                                                    | 16                                  |         |                |
-| LONGPORT_READ_QUEUE_SIZE  | longport protocol read queue size                                                                     | 16                                  |         |                |
-| LONGPORT_READ_BUFFER_SIZE | longport protocol read buffer size                                                                    | 4096                                |         |                |
-| LONGPORT_MIN_GZIP_SIZE    | longport protocol minimal gzip size                                                                   | 1024                                |         |                |
-| LONGPORT_ENABLE_OVERNIGHT | enable overnight quote subscription feature                                                           | false                               |         |                |
-| LONGPORT_LANGUAGE         | set user language for some information.                                                               | -                                   | en      | en,zh-CN,zh-HK |
+| LONGBRIDGE_REGION           | Set access region, if region equals `cn`, SDK will set httpUrl, quoteUrl, tradeUrl to China endpoints | -                                   | cn      | cn             |
+| LONGBRIDGE_HTTP_URL         | Longbridge REST API URL                                                                               | <https://openapi.longbridge.com>    |         |                |
+| LONGBRIDGE_APP_KEY          | app key                                                                                               |                                     |         |                |
+| LONGBRIDGE_APP_SECRET       | app secret                                                                                            |                                     |         |                |
+| LONGBRIDGE_ACCESS_TOKEN     | access token                                                                                          |                                     |         |                |
+| LONGBRIDGE_TRADE_URL        | Longbridge protocol URL for trade context                                                             | wss://openapi-trade.longbridge.com  |         |                |
+| LONGBRIDGE_QUOTE_URL        | Longbridge protocol URL for quote context                                                             | wss://openapi-quote.longbridge.com  |         |                |
+| LONGBRIDGE_LOG_LEVEL        | log level                                                                                             | info                                |         |                |
+| LONGBRIDGE_AUTH_TIMEOUT     | Longbridge protocol authorize request timeout                                                         | 10 second                           | 10s     |                |
+| LONGBRIDGE_TIMEOUT          | Longbridge protocol dial timeout                                                                      | 5 second                            | 6s      |                |
+| LONGBRIDGE_WRITE_QUEUE_SIZE | Longbridge protocol write queue size                                                                  | 16                                  |         |                |
+| LONGBRIDGE_READ_QUEUE_SIZE  | Longbridge protocol read queue size                                                                   | 16                                  |         |                |
+| LONGBRIDGE_READ_BUFFER_SIZE | Longbridge protocol read buffer size                                                                  | 4096                                |         |                |
+| LONGBRIDGE_MIN_GZIP_SIZE    | Longbridge protocol minimal gzip size                                                                 | 1024                                |         |                |
+| LONGBRIDGE_ENABLE_OVERNIGHT | enable overnight quote subscription feature                                                           | false                               |         |                |
+| LONGBRIDGE_LANGUAGE         | set user language for some information.                                                              | -                                   | en      | en,zh-CN,zh-HK |
 
 ## License
 

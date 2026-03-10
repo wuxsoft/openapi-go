@@ -25,7 +25,6 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/kr/text v0.2.0 // indirect
-	github.com/longportapp/openapi-protobufs/gen/go v0.4.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.7.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
